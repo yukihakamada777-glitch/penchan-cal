@@ -346,7 +346,7 @@
   }
   function snapshot(){ return JSON.parse(JSON.stringify(monthCache)); }
 
-  const seasonIcons = ['','🎍','❄️','🌸','🌸','🌿','☔','🌻','🎆','🌕','🎃','🍁','🎄'];
+  const seasonIcons = ['','🎍','❄️','🎎','🌸','🎏','☔','🌻','🎆','🌕','🎃','🍁','🎄'];
   function loadMonth(force) {
     document.getElementById('monthLabel').textContent = '🐧 ' + curYear + '年' + curMonth + '月 ' + (seasonIcons[curMonth] || '');
     const key = ymKey(curYear, curMonth);
