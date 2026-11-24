@@ -76,6 +76,7 @@
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #333c4f; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 13px; z-index: 100; opacity: 0; transition: opacity .25s; pointer-events: none; }
   .toast.show { opacity: 1; }
   .confetti { position: fixed; top: -12px; width: 8px; height: 12px; border-radius: 2px; z-index: 99; pointer-events: none; animation: fall 2.6s linear forwards; }
+  .emoji-drop { position: fixed; top: -24px; font-size: 20px; z-index: 99; pointer-events: none; animation: fall 2.8s linear forwards; }
   @keyframes fall { to { transform: translateY(105vh) rotate(540deg); opacity: 0; } }
   .owner-btns { display: flex; gap: 6px; margin-bottom: 10px; }
   .owner-btn { flex: 1; padding: 9px 4px; border-radius: 10px; border: 2px solid #2b3345; background: #121722; color: #ccc; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; }
@@ -335,6 +336,26 @@
       setTimeout(() => c.remove(), 3300);
     }
   }
+  function launchEmojiRain(emojis){
+    for(let i=0;i<16;i++){
+      const c = document.createElement('div');
+      c.className = 'emoji-drop';
+      c.textContent = emojis[i % emojis.length];
+      c.style.left = (Math.random()*94 + 3) + 'vw';
+      c.style.animationDelay = (Math.random()*0.7) + 's';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 3500);
+    }
+  }
+  function checkSeasonEffect(ds, cellEvs){
+    if (cellEvs.some(e => isUserBday(e))) { launchConfetti(); return; }
+    const md = ds.slice(5);
+    if (md === '12-24' || md === '12-25') launchEmojiRain(['🎄','❄️','🎅','✨']);
+    else if (md === '10-31') launchEmojiRain(['🎃','👻','🦇','🍬']);
+    else if (md === '01-01') launchEmojiRain(['🎍','🌅','✨','🐴']);
+    else if (md === '02-14') launchEmojiRain(['🍫','💝','❤️','✨']);
+    else if (md === '07-07') launchEmojiRain(['🎋','⭐','✨','🌌']);
+  }
   function pad(n){ return String(n).padStart(2,'0'); }
   function fmtDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
   function rank(e){ return e.kind==='holiday' ? 0 : (e.kind==='penguin' ? 1 : (e.allDay ? 2 : 3)); }
@@ -520,7 +541,7 @@
           lastTapDate = ds; lastTapTime = nowTap;
           selectedDate = ds;
           renderGrid(); renderDayEvents();
-          if (cellEvs.some(e => isUserBday(e))) launchConfetti();
+          checkSeasonEffect(ds, cellEvs);
           if (isDbl) openModal();
           else document.querySelector('.panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         };
