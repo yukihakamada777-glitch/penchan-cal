@@ -54,7 +54,7 @@
   .panel { padding: 14px; min-height: 200px; }
   .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .panel-title { font-size: 15px; font-weight: 700; }
-  .add-btn { background: linear-gradient(135deg, #3b82f6, #1e88e5); color: #fff; border: none; border-radius: 20px; padding: 8px 15px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(30,136,229,.35); }
+  .add-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #3b82f6, #1e88e5); color: #fff; border: none; border-radius: 50%; font-size: 22px; line-height: 1; font-weight: 500; cursor: pointer; box-shadow: 0 2px 8px rgba(30,136,229,.35); }
   .ev-item { display: flex; justify-content: space-between; align-items: center; background: #1a2030; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; border-left: 4px solid #e91e63; }
   .ev-item.editable { cursor: pointer; }
   .ev-item.editable:active { background: #232b40; }
@@ -116,7 +116,7 @@
 <div class="panel">
   <div class="panel-head">
     <div class="panel-title" id="selectedLabel"></div>
-    <button class="add-btn" onclick="openModal()">＋ 予定を追加</button>
+    <button class="add-btn" onclick="openModal()" aria-label="予定を追加">＋</button>
   </div>
   <div id="eventList"><div class="empty"><span class="waddle">🐧</span> 読み込み中ペン…</div></div>
 </div>
