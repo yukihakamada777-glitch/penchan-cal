@@ -512,8 +512,11 @@
       div.className = 'ev-item';
       const ownerLabel = e.owner === 'yuki' ? 'ゆうき' : (e.owner === 'miki' ? 'みき' : 'ふたり');
       div.style.borderLeftColor = isUserBday(e) ? '#ffb300' : (e.kind === 'holiday' ? '#479683' : (e.kind === 'penguin' ? '#64748b' : (e.owner === 'yuki' ? '#1e88e5' : (e.owner === 'miki' ? '#e91e63' : '#8e24aa'))));
-      const rangeInfo = (e.startDate && e.endDate && e.startDate !== e.endDate) ? (e.startDate.slice(5).replace('-','/') + '〜' + e.endDate.slice(5).replace('-','/') + ' ') : '';
-      const subText = e.kind==='holiday' ? '日本の祝日' : (e.kind==='penguin' ? 'ペンギンにまつわる日' : ('[' + ownerLabel + '] ' + rangeInfo + (e.allDay ? '終日' : e.startTime + ' 〜 ' + e.endTime)));
+      const isMulti = e.startDate && e.endDate && e.startDate !== e.endDate;
+      const sd = isMulti ? e.startDate.slice(5).replace('-','/') : '';
+      const ed = isMulti ? e.endDate.slice(5).replace('-','/') : '';
+      const timeStr = isMulti ? (e.allDay ? sd + '〜' + ed + ' 終日' : sd + ' ' + e.startTime + ' 〜 ' + ed + ' ' + e.endTime) : (e.allDay ? '終日' : e.startTime + ' 〜 ' + e.endTime);
+      const subText = e.kind==='holiday' ? '日本の祝日' : (e.kind==='penguin' ? 'ペンギンにまつわる日' : ('[' + ownerLabel + '] ' + timeStr));
       div.innerHTML = '<div><div class="ev-time">' + subText + '</div><div class="ev-name">' + esc(e.title) + '</div></div>';
       if (e.id && String(e.id).indexOf('tmp_') !== 0) {
         div.classList.add('editable');
