@@ -91,6 +91,9 @@
   .field { margin-bottom: 10px; }
   .field label { display: block; font-size: 12px; color: #9aa6b8; margin-bottom: 4px; }
   .field input[type="text"], .field input[type="date"], .field input[type="time"] { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #2b3345; background: #0f1218; color: #fff; font-size: 15px; }
+  .mini-opt { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; color: #9aa6b8; }
+  .mini-opt label { display: flex; align-items: center; gap: 4px; cursor: pointer; margin: 0; }
+  .mini-opt select { padding: 4px 8px; border-radius: 6px; border: 1px solid #2b3345; background: #0f1218; color: #eef1f6; font-size: 12px; }
   .row { display: flex; gap: 8px; }
   .row .field { flex: 1; }
   .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
@@ -147,6 +150,25 @@
       <div class="field"><label>開始</label><input type="time" id="fStart" value="12:00"></div>
       <div class="field"><label>終了</label><input type="time" id="fEnd" value="13:00"></div>
     </div>
+    <div class="mini-opt">
+      <label><input type="checkbox" id="fRemOn" checked onchange="toggleMiniOpts()"> リマインダー</label>
+      <select id="fRemMin">
+        <option value="10">10分前</option>
+        <option value="30">30分前</option>
+        <option value="60" selected>1時間前</option>
+        <option value="120">2時間前</option>
+        <option value="1440">1日前</option>
+      </select>
+    </div>
+    <div class="mini-opt">
+      <label><input type="checkbox" id="fRecOn" onchange="toggleMiniOpts()"> 繰り返し</label>
+      <select id="fRecur" style="display:none">
+        <option value="daily">毎日</option>
+        <option value="weekly">毎週</option>
+        <option value="monthly">毎月</option>
+        <option value="yearly">毎年</option>
+      </select>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
       <button class="btn-save" onclick="saveEvent()">保存する</button>
@@ -164,7 +186,7 @@
           withFailureHandler: fn => makeRunner(ok, fn),
           getMonthEvents: (y, m) => fetch(GAS_API + '?api=month&k=' + encodeURIComponent(API_KEY) + '&y=' + y + '&m=' + m).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); }),
           getRangeEvents: (sy, sm, ey, em) => fetch(GAS_API + '?api=range&k=' + encodeURIComponent(API_KEY) + '&sy=' + sy + '&sm=' + sm + '&ey=' + ey + '&em=' + em).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); }),
-          saveWebEvent: (eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner) => fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'save', k: API_KEY, eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner }) }).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); }),
+          saveWebEvent: (eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur) => fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'save', k: API_KEY, eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur }) }).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); }),
           deleteWebEvent: (eventId) => fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'delete', k: API_KEY, eventId }) }).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); })
         };
       }
@@ -530,7 +552,7 @@
   }
   function goToday(){ curYear = today.getFullYear(); curMonth = today.getMonth()+1; selectedDate = fmtDate(today); loadMonth(); }
   function syncEndDate(){ const s = document.getElementById('fDate').value; const e = document.getElementById('fEndDate'); if (!e.value || e.value < s) e.value = s; }
-  function fillModal(title, d1, d2, allDay, st, et, owner, heading){
+  function fillModal(title, d1, d2, allDay, st, et, owner, heading, remMin, recur){
     document.getElementById('modalTitle').textContent = heading;
     document.getElementById('fTitle').value = title;
     document.getElementById('fDate').value = d1;
@@ -538,13 +560,22 @@
     document.getElementById('fAllDay').checked = allDay;
     document.getElementById('fStart').value = st;
     document.getElementById('fEnd').value = et;
-    toggleTime(); setOwner(owner);
+    const rm = (remMin === undefined || remMin === null) ? 60 : Number(remMin);
+    document.getElementById('fRemOn').checked = rm > 0;
+    document.getElementById('fRemMin').value = String(rm > 0 ? rm : 60);
+    document.getElementById('fRecOn').checked = !!recur;
+    document.getElementById('fRecur').value = recur || 'weekly';
+    toggleTime(); toggleMiniOpts(); setOwner(owner);
     document.getElementById('modalBg').classList.add('open');
   }
-  function openModal(){ editingId = ''; fillModal('', selectedDate, selectedDate, false, '12:00', '13:00', 'both', '🐧 予定を追加'); }
-  function openModalRange(d1, d2){ editingId = ''; fillModal('', d1, d2, d1 !== d2, '12:00', '13:00', 'both', '🐧 予定を追加'); }
-  function openEditModal(e){ editingId = e.id; fillModal(e.title, e.startDate || e.date, e.endDate || e.date, !!e.allDay, e.startTime || '12:00', e.endTime || '13:00', e.owner || 'both', '🐧 予定を編集'); }
+  function openModal(){ editingId = ''; fillModal('', selectedDate, selectedDate, false, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
+  function openModalRange(d1, d2){ editingId = ''; fillModal('', d1, d2, d1 !== d2, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
+  function openEditModal(e){ editingId = e.id; fillModal(e.title, e.startDate || e.date, e.endDate || e.date, !!e.allDay, e.startTime || '12:00', e.endTime || '13:00', e.owner || 'both', '🐧 予定を編集', e.remMin, e.recur); }
   function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+  function toggleMiniOpts(){
+    document.getElementById('fRemMin').style.display = document.getElementById('fRemOn').checked ? '' : 'none';
+    document.getElementById('fRecur').style.display = document.getElementById('fRecOn').checked ? '' : 'none';
+  }
   let confirmCb = null;
   function openConfirm(msg, cb){
     document.getElementById('confirmMsg').textContent = msg;
@@ -566,6 +597,8 @@
     const endTime = document.getElementById('fEnd').value;
     const targetEditId = editingId;
     const owner = selectedOwner;
+    const remMin = document.getElementById('fRemOn').checked ? Number(document.getElementById('fRemMin').value) : 0;
+    const recur = document.getElementById('fRecOn').checked ? document.getElementById('fRecur').value : '';
     const backup = snapshot();
 
     // 楽観的UI：0秒で反映
@@ -591,7 +624,7 @@
     google.script.run
       .withSuccessHandler(() => { toast('保存したペン。'); refresh(); })
       .withFailureHandler(() => { monthCache = backup; renderGrid(); renderDayEvents(); toast('保存できなかったペン。もう一回お願いペン。'); })
-      .saveWebEvent(targetEditId, dateStr, endDateStr, startTime, endTime, allDay, title, owner);
+      .saveWebEvent(targetEditId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur);
   }
   showTip();
   loadMonth();
