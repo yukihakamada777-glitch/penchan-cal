@@ -343,11 +343,11 @@
       dragStart = ds; dragEnd = ds;
       if (navigator.vibrate) navigator.vibrate(25);
       updateDragHighlight();
-    }, 350);
+    }, 650);
   }
   function moveLongPress(x, y, ev) {
     if (!isDragging) {
-      if (Math.hypot(x - touchStartX, y - touchStartY) > 10) clearTimeout(dragTimer);
+      if (Math.hypot(x - touchStartX, y - touchStartY) > 8) clearTimeout(dragTimer);
       return;
     }
     if (ev && ev.cancelable) ev.preventDefault();
@@ -363,7 +363,7 @@
       updateDragHighlight();
       selectedDate = a;
       renderGrid(); renderDayEvents();
-      openModalRange(a, b);
+      if (a !== b) openModalRange(a, b);
       return;
     }
     if (allowSwipe) {
