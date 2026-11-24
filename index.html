@@ -317,15 +317,16 @@
 
   // 横スワイプで月切替 ＋ 長押しドラッグで複数日範囲選択
   let touchStartX = 0, touchStartY = 0;
-  let dragTimer = null, isDragging = false, dragStart = '', dragEnd = '';
+  let dragTimer = null, isDragging = false, dragStart = '', dragEnd = '', keepRange = null;
   const gridEl = document.getElementById('grid');
 
   function updateDragHighlight() {
-    const a = dragStart <= dragEnd ? dragStart : dragEnd;
-    const b = dragStart <= dragEnd ? dragEnd : dragStart;
+    const a = isDragging ? (dragStart <= dragEnd ? dragStart : dragEnd) : (keepRange ? keepRange[0] : '');
+    const b = isDragging ? (dragStart <= dragEnd ? dragEnd : dragStart) : (keepRange ? keepRange[1] : '');
+    const on = !!(a && b);
     gridEl.querySelectorAll('.cell').forEach(c => {
       const ds = c.dataset.date;
-      c.classList.toggle('dragging', isDragging && ds >= a && ds <= b);
+      c.classList.toggle('dragging', on && ds >= a && ds <= b);
     });
   }
   function cellDateAt(x, y) {
@@ -360,9 +361,10 @@
       const a = dragStart <= dragEnd ? dragStart : dragEnd;
       const b = dragStart <= dragEnd ? dragEnd : dragStart;
       isDragging = false; dragStart = ''; dragEnd = '';
-      updateDragHighlight();
+      keepRange = (a !== b) ? [a, b] : null;
       selectedDate = a;
       renderGrid(); renderDayEvents();
+      updateDragHighlight();
       if (a !== b) openModalRange(a, b);
       return;
     }
@@ -574,7 +576,7 @@
   function openModal(){ editingId = ''; fillModal('', selectedDate, selectedDate, false, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
   function openModalRange(d1, d2){ editingId = ''; fillModal('', d1, d2, d1 !== d2, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
   function openEditModal(e){ editingId = e.id; fillModal(e.title, e.startDate || e.date, e.endDate || e.date, !!e.allDay, e.startTime || '12:00', e.endTime || '13:00', e.owner || 'both', '🐧 予定を編集', e.remMin, e.recur); }
-  function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+  function closeModal(){ document.getElementById('modalBg').classList.remove('open'); keepRange = null; updateDragHighlight(); }
   function toggleMiniOpts(){
     document.getElementById('fRemMin').style.display = document.getElementById('fRemOn').checked ? '' : 'none';
     document.getElementById('fRecur').style.display = document.getElementById('fRecOn').checked ? '' : 'none';
