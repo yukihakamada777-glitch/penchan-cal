@@ -176,17 +176,53 @@
 </div>
 <script>
   const GAS_API = 'https://script.google.com/macros/s/AKfycby_keYHDFZc5bHmRn0VB8ebnKBFnFjGTQhJAjJqneu5gOBIxleB55Edw_poVyM0fr-7/exec';
-  const API_KEY = new URLSearchParams(location.search).get('k') || '';
+  let API_KEY = '';
+  (function initKey() {
+    const m = (location.hash || '').match(/(?:^#|&)k=([^&]+)/);
+    if (m && m[1]) {
+      API_KEY = decodeURIComponent(m[1]);
+      try { localStorage.setItem('penchan_k', API_KEY); } catch (e) {}
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    } else {
+      try { API_KEY = localStorage.getItem('penchan_k') || ''; } catch (e) {}
+    }
+  })();
+  function showNeedLineMsg() {
+    const el = document.getElementById('eventList');
+    if (el) el.innerHTML = '<div class="empty">LINEで「カレンダー」と送ってほしいペン。</div>';
+    const g = document.getElementById('grid');
+    if (g) g.classList.remove('loading');
+  }
   if (typeof google === 'undefined') {
     window.google = { script: { run: (() => {
       function makeRunner(ok, ng) {
         return {
           withSuccessHandler: fn => makeRunner(fn, ng),
           withFailureHandler: fn => makeRunner(ok, fn),
-          getMonthEvents: (y, m) => fetch(GAS_API + '?api=month&k=' + encodeURIComponent(API_KEY) + '&y=' + y + '&m=' + m).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); }),
-          getRangeEvents: (sy, sm, ey, em) => fetch(GAS_API + '?api=range&k=' + encodeURIComponent(API_KEY) + '&sy=' + sy + '&sm=' + sm + '&ey=' + ey + '&em=' + em).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); }),
-          saveWebEvent: (eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur) => fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'save', k: API_KEY, eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur }) }).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); }),
-          deleteWebEvent: (eventId) => fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'delete', k: API_KEY, eventId }) }).then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); }).catch(e => { if (ng) ng(e); })
+          getMonthEvents: (y, m) => {
+            if (!API_KEY) { showNeedLineMsg(); return; }
+            fetch(GAS_API + '?api=month&k=' + encodeURIComponent(API_KEY) + '&y=' + y + '&m=' + m)
+              .then(r => r.json()).then(d => { if (d && d.error) { showNeedLineMsg(); return; } if (ok) ok(d); })
+              .catch(e => { if (ng) ng(e); });
+          },
+          getRangeEvents: (sy, sm, ey, em) => {
+            if (!API_KEY) return;
+            fetch(GAS_API + '?api=range&k=' + encodeURIComponent(API_KEY) + '&sy=' + sy + '&sm=' + sm + '&ey=' + ey + '&em=' + em)
+              .then(r => r.json()).then(d => { if (d && d.error) return; if (ok) ok(d); })
+              .catch(e => { if (ng) ng(e); });
+          },
+          saveWebEvent: (eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur) => {
+            if (!API_KEY) { showNeedLineMsg(); return; }
+            fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'save', k: API_KEY, eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur }) })
+              .then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); })
+              .catch(e => { if (ng) ng(e); });
+          },
+          deleteWebEvent: (eventId) => {
+            if (!API_KEY) { showNeedLineMsg(); return; }
+            fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'delete', k: API_KEY, eventId }) })
+              .then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); })
+              .catch(e => { if (ng) ng(e); });
+          }
         };
       }
       return makeRunner(null, null);
