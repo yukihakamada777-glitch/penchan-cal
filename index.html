@@ -181,6 +181,9 @@
         <option value="yearly">毎年</option>
       </select>
     </div>
+    <div class="mini-opt">
+      <label><input type="checkbox" id="fNotify"> LINEグループに通知する</label>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
       <button class="btn-save" onclick="saveEvent()">保存する</button>
@@ -225,9 +228,9 @@
               .then(r => r.json()).then(d => { if (d && d.error) return; if (ok) ok(d); })
               .catch(e => { if (ng) ng(e); });
           },
-          saveWebEvent: (eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur) => {
+          saveWebEvent: (eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur, notify) => {
             if (!API_KEY) { showNeedLineMsg(); return; }
-            fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'save', k: API_KEY, eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur }) })
+            fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'save', k: API_KEY, eventId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur, notify: !!notify }) })
               .then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); })
               .catch(e => { if (ng) ng(e); });
           },
@@ -784,6 +787,7 @@
     const owner = selectedOwner;
     const remMin = document.getElementById('fRemOn').checked ? Number(document.getElementById('fRemMin').value) : 0;
     const recur = document.getElementById('fRecOn').checked ? document.getElementById('fRecur').value : '';
+    const notify = document.getElementById('fNotify').checked;
     const backup = snapshot();
 
     // 楽観的UI：0秒で反映
@@ -809,7 +813,7 @@
     google.script.run
       .withSuccessHandler(() => { toast('保存したペン。'); refresh(); })
       .withFailureHandler(() => { monthCache = backup; renderGrid(); renderDayEvents(); toast('保存できなかったペン。もう一回お願いペン。'); })
-      .saveWebEvent(targetEditId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur);
+      .saveWebEvent(targetEditId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur, notify);
   }
   // アプリに戻ってきたら日付の更新と最新の予定の読み直し
   document.addEventListener('visibilitychange', () => {
