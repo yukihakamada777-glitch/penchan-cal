@@ -126,9 +126,14 @@
   <div class="confirm-box">
     <div class="confirm-title">🐧 削除の確認</div>
     <div class="confirm-msg" id="confirmMsg"></div>
-    <div class="confirm-actions">
+    <div class="confirm-actions" id="confirmActionsSingle">
       <button class="btn-cancel" onclick="closeConfirm()">キャンセル</button>
       <button class="btn-del" id="confirmOk">削除する</button>
+    </div>
+    <div class="confirm-actions" id="confirmActionsRecur" style="display:none;flex-direction:column;gap:8px;">
+      <button class="btn-del" id="confirmOne" style="background:#f59e0b;">この1回だけ削除</button>
+      <button class="btn-del" id="confirmAll">繰り返しを全部削除</button>
+      <button class="btn-cancel" onclick="closeConfirm()">キャンセル</button>
     </div>
   </div>
 </div>
@@ -219,9 +224,9 @@
               .then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); })
               .catch(e => { if (ng) ng(e); });
           },
-          deleteWebEvent: (eventId) => {
+          deleteWebEvent: (eventId, mode) => {
             if (!API_KEY) { showNeedLineMsg(); return; }
-            fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'delete', k: API_KEY, eventId }) })
+            fetch(GAS_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ api: 'delete', k: API_KEY, eventId, mode: mode || 'one' }) })
               .then(r => r.json()).then(d => { if (d && d.error) throw new Error(d.error); if (ok) ok(d); })
               .catch(e => { if (ng) ng(e); });
           }
@@ -677,15 +682,22 @@
         btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
         btn.onclick = (ev) => {
           ev.stopPropagation();
-          openConfirm('「' + e.title + '」を削除するペン？', () => {
+          const doDel = (mode) => {
             const backup = snapshot();
-            Object.keys(monthCache).forEach(k => { monthCache[k] = monthCache[k].filter(x => x.id !== e.id); });
+            Object.keys(monthCache).forEach(k => {
+              monthCache[k] = monthCache[k].filter(x => mode === 'all' ? x.id !== e.id : !(x.id === e.id && x.date === e.date));
+            });
             renderGrid(); renderDayEvents();
             google.script.run
-              .withSuccessHandler(() => { toast('削除したペン。'); refresh(); })
+              .withSuccessHandler(() => { toast(mode === 'all' ? '繰り返しを全部削除したペン。' : '削除したペン。'); refresh(); })
               .withFailureHandler(() => { monthCache = backup; renderGrid(); renderDayEvents(); toast('削除できなかったペン。もう一回お願いペン。'); })
-              .deleteWebEvent(e.id);
-          });
+              .deleteWebEvent(e.id, mode);
+          };
+          if (e.recur) {
+            openConfirmRecur('「' + e.title + '」は繰り返し予定ペン。どう消すペン？', () => doDel('one'), () => doDel('all'));
+          } else {
+            openConfirm('「' + e.title + '」を削除するペン？', () => doDel('one'));
+          }
         };
         acts.appendChild(btn);
         div.appendChild(acts);
@@ -728,14 +740,25 @@
     document.getElementById('fRemMin').style.display = document.getElementById('fRemOn').checked ? '' : 'none';
     document.getElementById('fRecur').style.display = document.getElementById('fRecOn').checked ? '' : 'none';
   }
-  let confirmCb = null;
+  let confirmCb = null, confirmOneCb = null, confirmAllCb = null;
   function openConfirm(msg, cb){
     document.getElementById('confirmMsg').textContent = msg;
+    document.getElementById('confirmActionsSingle').style.display = 'flex';
+    document.getElementById('confirmActionsRecur').style.display = 'none';
     confirmCb = cb;
     document.getElementById('confirmBg').classList.add('open');
   }
-  function closeConfirm(){ document.getElementById('confirmBg').classList.remove('open'); confirmCb = null; }
+  function openConfirmRecur(msg, cbOne, cbAll){
+    document.getElementById('confirmMsg').textContent = msg;
+    document.getElementById('confirmActionsSingle').style.display = 'none';
+    document.getElementById('confirmActionsRecur').style.display = 'flex';
+    confirmOneCb = cbOne; confirmAllCb = cbAll;
+    document.getElementById('confirmBg').classList.add('open');
+  }
+  function closeConfirm(){ document.getElementById('confirmBg').classList.remove('open'); confirmCb = null; confirmOneCb = null; confirmAllCb = null; }
   document.getElementById('confirmOk').onclick = () => { const cb = confirmCb; closeConfirm(); if (cb) cb(); };
+  document.getElementById('confirmOne').onclick = () => { const cb = confirmOneCb; closeConfirm(); if (cb) cb(); };
+  document.getElementById('confirmAll').onclick = () => { const cb = confirmAllCb; closeConfirm(); if (cb) cb(); };
   function toggleTime(){ document.getElementById('timeRow').style.display = document.getElementById('fAllDay').checked ? 'none' : 'flex'; }
 
   function saveEvent(){
