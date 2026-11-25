@@ -18,7 +18,7 @@
   .dow div:first-child { color: #ff7b7b; }
   .dow div:last-child { color: #6bc5ff; }
   .grid { display: flex; flex-direction: column; gap: 1px; background: #1b2130; transition: opacity .15s; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; position: relative; }
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; position: relative; }
   .span-bar { position: absolute; height: 15px; line-height: 15px; font-size: 9px; color: #fff; padding: 0 4px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; z-index: 2; }
   .span-bar.cont-l { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .span-bar.cont-r { border-top-right-radius: 0; border-bottom-right-radius: 0; }
@@ -45,7 +45,8 @@
   .ev-pill.yuki { background: #1e88e5; }
   .ev-pill.miki { background: #e91e63; }
   .ev-pill.both { background: #8e24aa; }
-  .ev-pill.holiday { background: #479683; }
+  .ev-pill.holiday { background: #b93b3b; }
+  .ev-pill.season { background: #5a6270; color: #fff; }
   .ev-pill.penguin { background: #64748b; color: #fff; }
   .ev-pill.bday { background: linear-gradient(90deg, #ff4081, #ffb300); font-weight: 700; }
   .ev-pill.pending { opacity: .6; }
@@ -636,7 +637,7 @@
         const maxSingle = Math.max(1, 3 - maxLanesPerCol[colIdx]);
         singleEvs.slice(0, maxSingle).forEach(e => {
           const p = document.createElement('div');
-          const cls = isUserBday(e) ? ' bday' : (e.kind==='holiday' ? ' holiday' : (e.kind==='penguin' ? ' penguin' : (' ' + (e.owner || 'both'))));
+          const cls = isUserBday(e) ? ' bday' : (e.kind==='holiday' ? ' holiday' : (e.kind==='season' ? ' season' : (e.kind==='penguin' ? ' penguin' : (' ' + (e.owner || 'both')))));
           p.className = 'ev-pill' + cls + (String(e.id).indexOf('tmp_') === 0 ? ' pending' : '');
           p.textContent = (isUserBday(e) && e.title.indexOf('🎂') < 0 ? '🎂' : '') + e.title;
           cell.appendChild(p);
@@ -683,12 +684,12 @@
       const div = document.createElement('div');
       div.className = 'ev-item';
       const ownerLabel = e.owner === 'yuki' ? 'ゆうき' : (e.owner === 'miki' ? 'みき' : 'ふたり');
-      div.style.borderLeftColor = isUserBday(e) ? '#ffb300' : (e.kind === 'holiday' ? '#479683' : (e.kind === 'penguin' ? '#64748b' : (e.owner === 'yuki' ? '#1e88e5' : (e.owner === 'miki' ? '#e91e63' : '#8e24aa'))));
+      div.style.borderLeftColor = isUserBday(e) ? '#ffb300' : (e.kind === 'holiday' ? '#b93b3b' : (e.kind === 'season' ? '#5a6270' : (e.kind === 'penguin' ? '#64748b' : (e.owner === 'yuki' ? '#1e88e5' : (e.owner === 'miki' ? '#e91e63' : '#8e24aa')))));
       const isMulti = e.startDate && e.endDate && e.startDate !== e.endDate;
       const sd = isMulti ? e.startDate.slice(5).replace('-','/') : '';
       const ed = isMulti ? e.endDate.slice(5).replace('-','/') : '';
       const timeStr = isMulti ? (e.allDay ? sd + '〜' + ed + ' 終日' : sd + ' ' + e.startTime + ' 〜 ' + ed + ' ' + e.endTime) : (e.allDay ? '終日' : e.startTime + ' 〜 ' + e.endTime);
-      const subText = e.kind==='holiday' ? '日本の祝日' : (e.kind==='penguin' ? 'ペンギンにまつわる日' : ('[' + ownerLabel + '] ' + timeStr));
+      const subText = e.kind==='holiday' ? '日本の祝日' : (e.kind==='season' ? '季節の行事' : (e.kind==='penguin' ? 'ペンギンにまつわる日' : ('[' + ownerLabel + '] ' + timeStr)));
       div.innerHTML = '<div><div class="ev-time">' + subText + '</div><div class="ev-name">' + esc(e.title) + '</div></div>';
       if (e.id && String(e.id).indexOf('tmp_') !== 0) {
         div.classList.add('editable');
