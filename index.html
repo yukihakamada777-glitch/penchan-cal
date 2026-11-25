@@ -27,6 +27,7 @@
   .span-bar.both { background: #8e24aa; }
   .span-bar.bday { background: linear-gradient(90deg, #ff4081, #ffb300); font-weight: 700; }
   .span-bar.pending { opacity: .6; }
+  .span-bar.other { opacity: .35; }
   .grid.slide-next { animation: slideNext .22s ease-out; }
   .grid.slide-prev { animation: slidePrev .22s ease-out; }
   @keyframes slideNext { from { transform: translateX(28px); opacity: .35; } to { transform: none; opacity: 1; } }
@@ -650,11 +651,15 @@
       });
 
       // 繋がった複数日バーを重ねて描画
+      const mStart = curYear + '-' + pad(curMonth) + '-01';
+      const mEnd = curYear + '-' + pad(curMonth) + '-31';
       spans.forEach(sp => {
         const e = sp.e;
+        const sd = e.startDate || e.date, ed = e.endDate || e.date;
+        const isOtherBar = (ed < mStart || sd > mEnd);
         const bar = document.createElement('div');
         const cls = isUserBday(e) ? ' bday' : (' ' + (e.owner || 'both'));
-        bar.className = 'span-bar' + cls + (sp.contL ? ' cont-l' : '') + (sp.contR ? ' cont-r' : '') + (String(e.id).indexOf('tmp_') === 0 ? ' pending' : '');
+        bar.className = 'span-bar' + cls + (sp.contL ? ' cont-l' : '') + (sp.contR ? ' cont-r' : '') + (isOtherBar ? ' other' : '') + (String(e.id).indexOf('tmp_') === 0 ? ' pending' : '');
         bar.style.top = (27 + sp.lane * 17) + 'px';
         bar.style.left = 'calc(' + (sp.c1 * 100 / 7) + '% + ' + (sp.contL ? 0 : 2) + 'px)';
         bar.style.width = 'calc(' + ((sp.c2 - sp.c1 + 1) * 100 / 7) + '% - ' + ((sp.contL ? 0 : 2) + (sp.contR ? 0 : 2)) + 'px)';
