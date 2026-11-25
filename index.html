@@ -382,7 +382,9 @@
   }
   function ymKey(y, m){ return y + '-' + m; }
   function isBday(t){ return /誕生|生誕|バースデー|birthday|🎂/i.test(t || ''); }
+  function isAnniv(t){ return /記念日|アニバーサリー|anniversary/i.test(t || ''); }
   function isUserBday(e){ return e && e.kind === 'event' && isBday(e.title) && !/天皇/.test(e.title || ''); }
+  function isUserAnniv(e){ return e && e.kind === 'event' && isAnniv(e.title); }
   function launchConfetti(){
     const colors = ['#ff4081','#ffd740','#40c4ff','#69f0ae','#e040fb'];
     for(let i=0;i<24;i++){
@@ -408,6 +410,7 @@
   }
   function checkSeasonEffect(ds, cellEvs){
     if (cellEvs.some(e => isUserBday(e))) { launchConfetti(); return; }
+    if (cellEvs.some(e => isUserAnniv(e))) { launchConfetti(); launchEmojiRain(['🎉','💖','✨','💐','🥂']); return; }
     const md = ds.slice(5);
     if (md === '12-24' || md === '12-25') launchEmojiRain(['🎄','❄️','🎅','✨']);
     else if (md === '10-31') launchEmojiRain(['🎃','👻','🦇','🍬']);
