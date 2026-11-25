@@ -71,6 +71,7 @@
   .confirm-actions button { flex: 1; padding: 10px; border-radius: 10px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; }
   .btn-del { background: #e53935; color: #fff; }
   .empty { color: #77819a; font-size: 13px; text-align: center; padding: 20px 0; }
+  .retry-btn { margin-top: 10px; background: #2b6cff; color: #fff; border: none; border-radius: 10px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
   .waddle { display: inline-block; animation: waddle .6s ease-in-out infinite alternate; }
   @keyframes waddle { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #333c4f; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 13px; z-index: 100; opacity: 0; transition: opacity .25s; pointer-events: none; }
@@ -189,6 +190,7 @@
   })();
   function showNeedLineMsg() {
     const el = document.getElementById('eventList');
+    clearCache();
     if (el) el.innerHTML = '<div class="empty">LINEで「カレンダー」と送ってほしいペン。</div>';
     const g = document.getElementById('grid');
     if (g) g.classList.remove('loading');
@@ -229,7 +231,7 @@
     })() } };
   }
 
-  const today = new Date();
+  let today = new Date();
   let curYear = today.getFullYear();
   let curMonth = today.getMonth() + 1;
   let selectedDate = fmtDate(today);
@@ -237,6 +239,20 @@
   let editingId = '';
   let monthCache = {};
   let prefetched = false;
+  // 前回の予定をスマホに保存しておき、開いた瞬間に表示する
+  const CACHE_KEY = 'penchan_cache_v1';
+  let lastFetchAt = 0;
+  function saveCache(){
+    try {
+      const o = {};
+      Object.keys(monthCache).forEach(k => { o[k] = monthCache[k].filter(x => !String(x.id || '').startsWith('tmp_')); });
+      localStorage.setItem(CACHE_KEY, JSON.stringify(o));
+    } catch (e) {}
+  }
+  function clearCache(){ try { localStorage.removeItem(CACHE_KEY); } catch (e) {} }
+  if (API_KEY) {
+    try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (c && typeof c === 'object') monthCache = c; } catch (e) {}
+  }
   let lastTapDate = '', lastTapTime = 0;
 
   const TIPS = [
@@ -408,15 +424,19 @@
     const key = ymKey(curYear, curMonth);
     renderGrid();
     if (!force && monthCache[key]) { renderDayEvents(); return; }
-    document.getElementById('grid').classList.add('loading');
+    if (monthCache[key]) renderDayEvents(); else document.getElementById('grid').classList.add('loading');
     google.script.run.withSuccessHandler(evs => {
       monthCache[key] = evs || [];
+      lastFetchAt = Date.now(); saveCache();
       document.getElementById('grid').classList.remove('loading');
       renderGrid(); renderDayEvents();
       if (!prefetched) { prefetched = true; prefetchYear(); }
     }).withFailureHandler(() => {
       document.getElementById('grid').classList.remove('loading');
-      toast('読み込めなかったペン。もう一回開いてほしいペン。');
+      if (monthCache[key]) { toast('つながらないので前回の予定を出してるペン。'); return; }
+      toast('読み込めなかったペン。');
+      const el = document.getElementById('eventList');
+      if (el) el.innerHTML = '<div class="empty">読み込めなかったペン。<br><button class="retry-btn" onclick="loadMonth(true)">もう一回読み込む</button></div>';
     }).getMonthEvents(curYear, curMonth);
   }
 
@@ -436,6 +456,7 @@
         monthCache[k] = grouped[k] || [];
         d.setMonth(d.getMonth() + 1);
       }
+      lastFetchAt = Date.now(); saveCache();
       renderGrid(); renderDayEvents();
     }).getRangeEvents(s.getFullYear(), s.getMonth() + 1, e.getFullYear(), e.getMonth() + 1);
   }
@@ -757,7 +778,19 @@
       .withFailureHandler(() => { monthCache = backup; renderGrid(); renderDayEvents(); toast('保存できなかったペン。もう一回お願いペン。'); })
       .saveWebEvent(targetEditId, dateStr, endDateStr, startTime, endTime, allDay, title, owner, remMin, recur);
   }
-  loadMonth();
+  // アプリに戻ってきたら日付の更新と最新の予定の読み直し
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    const now = new Date();
+    if (fmtDate(now) !== fmtDate(today)) {
+      const wasToday = selectedDate === fmtDate(today);
+      today = now;
+      if (wasToday) selectedDate = fmtDate(today);
+      renderGrid(); renderDayEvents();
+    }
+    if (API_KEY && Date.now() - lastFetchAt > 30000) { lastFetchAt = Date.now(); prefetchYear(); }
+  });
+  loadMonth(true);
 </script>
 </body>
 </html>
