@@ -46,7 +46,7 @@
   .ev-pill.miki { background: #e91e63; }
   .ev-pill.both { background: #8e24aa; }
   .ev-pill.holiday { background: #b93b3b; }
-  .ev-pill.season { background: #5a6270; color: #fff; }
+  .ev-pill.season { background: #2e7d5b; color: #fff; }
   .ev-pill.penguin { background: #64748b; color: #fff; }
   .ev-pill.bday { background: linear-gradient(90deg, #ff4081, #ffb300); font-weight: 700; }
   .ev-pill.pending { opacity: .6; }
@@ -685,7 +685,7 @@
       const div = document.createElement('div');
       div.className = 'ev-item';
       const ownerLabel = e.owner === 'yuki' ? 'ゆうき' : (e.owner === 'miki' ? 'みき' : 'ふたり');
-      div.style.borderLeftColor = isUserBday(e) ? '#ffb300' : (e.kind === 'holiday' ? '#b93b3b' : (e.kind === 'season' ? '#5a6270' : (e.kind === 'penguin' ? '#64748b' : (e.owner === 'yuki' ? '#1e88e5' : (e.owner === 'miki' ? '#e91e63' : '#8e24aa')))));
+      div.style.borderLeftColor = isUserBday(e) ? '#ffb300' : (e.kind === 'holiday' ? '#b93b3b' : (e.kind === 'season' ? '#2e7d5b' : (e.kind === 'penguin' ? '#64748b' : (e.owner === 'yuki' ? '#1e88e5' : (e.owner === 'miki' ? '#e91e63' : '#8e24aa')))));
       const isMulti = e.startDate && e.endDate && e.startDate !== e.endDate;
       const sd = isMulti ? e.startDate.slice(5).replace('-','/') : '';
       const ed = isMulti ? e.endDate.slice(5).replace('-','/') : '';
