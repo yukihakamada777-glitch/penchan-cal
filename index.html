@@ -421,12 +421,13 @@
   function checkSeasonEffect(ds, cellEvs){
     if (cellEvs.some(e => isUserBday(e))) { launchConfetti(); return; }
     if (cellEvs.some(e => isUserAnniv(e))) { launchConfetti(); launchEmojiRain(['🎉','💖','✨','💐','🥂']); return; }
+    const titles = cellEvs.map(e => e.title || '').join(' ');
     const md = ds.slice(5);
-    if (md === '12-24' || md === '12-25') launchEmojiRain(['🎄','❄️','🎅','✨']);
-    else if (md === '10-31') launchEmojiRain(['🎃','👻','🦇','🍬']);
-    else if (md === '01-01') launchEmojiRain(['🎍','🌅','✨','🐴']);
-    else if (md === '02-14') launchEmojiRain(['🍫','💝','❤️','✨']);
-    else if (md === '07-07') launchEmojiRain(['🎋','⭐','✨','🌌']);
+    if (md === '12-24' || md === '12-25' || /クリスマス|Xmas|サンタ|🎄|🎅/i.test(titles)) launchEmojiRain(['🎄','❄️','🎅','✨']);
+    else if (md === '10-31' || /ハロウィン|ハロウィーン|🎃/.test(titles)) launchEmojiRain(['🎃','👻','🦇','🍬']);
+    else if (md === '01-01' || /お正月|初詣|🎍/.test(titles)) launchEmojiRain(['🎍','🌅','✨','🐴']);
+    else if (md === '02-14' || /バレンタイン|チョコ|🍫|💝/.test(titles)) launchEmojiRain(['🍫','💝','❤️','✨']);
+    else if (md === '07-07' || /七夕|🎋/.test(titles)) launchEmojiRain(['🎋','⭐','✨','🌌']);
   }
   function pad(n){ return String(n).padStart(2,'0'); }
   function fmtDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
