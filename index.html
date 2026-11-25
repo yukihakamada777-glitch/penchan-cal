@@ -751,22 +751,33 @@
     document.getElementById('fRecur').value = recur || 'weekly';
     toggleTime(); toggleMiniOpts(); setOwner(owner);
     document.getElementById('modalBg').classList.add('open');
+    if (!modalPushed) { try { history.pushState({ penModal: 1 }, ''); modalPushed = true; } catch(e){} }
   }
+  let modalPushed = false;
   function openModal(){ editingId = ''; fillModal('', selectedDate, selectedDate, false, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
   function openModalRange(d1, d2){ editingId = ''; fillModal('', d1, d2, d1 !== d2, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
   function openEditModal(e){ editingId = e.id; fillModal(e.title, e.startDate || e.date, e.endDate || e.date, !!e.allDay, e.startTime || '12:00', e.endTime || '13:00', e.owner || 'both', '🐧 予定を編集', e.remMin, e.recur); }
-  function closeModal(){ document.getElementById('modalBg').classList.remove('open'); keepRange = null; updateDragHighlight(); }
+  function closeModal(fromPop){
+    document.getElementById('modalBg').classList.remove('open');
+    keepRange = null; updateDragHighlight();
+    if (modalPushed) { modalPushed = false; if (!fromPop) { try { history.back(); } catch(e){} } }
+  }
+  window.addEventListener('popstate', () => {
+    if (document.getElementById('confirmBg').classList.contains('open')) { closeConfirm(true); return; }
+    if (document.getElementById('modalBg').classList.contains('open')) { closeModal(true); return; }
+  });
   function toggleMiniOpts(){
     document.getElementById('fRemMin').style.display = document.getElementById('fRemOn').checked ? '' : 'none';
     document.getElementById('fRecur').style.display = document.getElementById('fRecOn').checked ? '' : 'none';
   }
-  let confirmCb = null, confirmOneCb = null, confirmAllCb = null;
+  let confirmCb = null, confirmOneCb = null, confirmAllCb = null, confirmPushed = false;
   function openConfirm(msg, cb){
     document.getElementById('confirmMsg').textContent = msg;
     document.getElementById('confirmActionsSingle').style.display = 'flex';
     document.getElementById('confirmActionsRecur').style.display = 'none';
     confirmCb = cb;
     document.getElementById('confirmBg').classList.add('open');
+    if (!confirmPushed) { try { history.pushState({ penConfirm: 1 }, ''); confirmPushed = true; } catch(e){} }
   }
   function openConfirmRecur(msg, cbOne, cbAll){
     document.getElementById('confirmMsg').textContent = msg;
@@ -774,8 +785,13 @@
     document.getElementById('confirmActionsRecur').style.display = 'flex';
     confirmOneCb = cbOne; confirmAllCb = cbAll;
     document.getElementById('confirmBg').classList.add('open');
+    if (!confirmPushed) { try { history.pushState({ penConfirm: 1 }, ''); confirmPushed = true; } catch(e){} }
   }
-  function closeConfirm(){ document.getElementById('confirmBg').classList.remove('open'); confirmCb = null; confirmOneCb = null; confirmAllCb = null; }
+  function closeConfirm(fromPop){
+    document.getElementById('confirmBg').classList.remove('open');
+    confirmCb = null; confirmOneCb = null; confirmAllCb = null;
+    if (confirmPushed) { confirmPushed = false; if (!fromPop) { try { history.back(); } catch(e){} } }
+  }
   document.getElementById('confirmOk').onclick = () => { const cb = confirmCb; closeConfirm(); if (cb) cb(); };
   document.getElementById('confirmOne').onclick = () => { const cb = confirmOneCb; closeConfirm(); if (cb) cb(); };
   document.getElementById('confirmAll').onclick = () => { const cb = confirmAllCb; closeConfirm(); if (cb) cb(); };
