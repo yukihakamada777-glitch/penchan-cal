@@ -800,8 +800,18 @@
     const el = this;
     setTimeout(() => { syncModalViewport(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 120);
   });
-  function openModal(){ editingId = ''; fillModal('', selectedDate, selectedDate, false, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
-  function openModalRange(d1, d2){ editingId = ''; fillModal('', d1, d2, d1 !== d2, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
+  function getLastRemMin(){
+    try {
+      const s = localStorage.getItem('penchan_last_rem');
+      if (s !== null && s !== '' && !isNaN(Number(s))) return Number(s);
+    } catch (e) {}
+    return 60;
+  }
+  function saveLastRemMin(v){
+    try { localStorage.setItem('penchan_last_rem', String(v)); } catch (e) {}
+  }
+  function openModal(){ editingId = ''; fillModal('', selectedDate, selectedDate, false, '12:00', '13:00', 'both', '🐧 予定を追加', getLastRemMin(), ''); }
+  function openModalRange(d1, d2){ editingId = ''; fillModal('', d1, d2, d1 !== d2, '12:00', '13:00', 'both', '🐧 予定を追加', getLastRemMin(), ''); }
   function openEditModal(e){ editingId = e.id; fillModal(e.title, e.startDate || e.date, e.endDate || e.date, !!e.allDay, e.startTime || '12:00', e.endTime || '13:00', e.owner || 'both', '🐧 予定を編集', e.remMin, e.recur); }
   function closeModal(fromPop){
     document.getElementById('modalBg').classList.remove('open');
@@ -891,6 +901,7 @@
         ? Math.max(1, Number(document.getElementById('fRemVal').value || 15)) * Number(document.getElementById('fRemUnit').value || 1)
         : Number(rv);
     }
+    saveLastRemMin(remMin);
     const recur = document.getElementById('fRecOn').checked ? document.getElementById('fRecur').value : '';
     const notify = document.getElementById('fNotify').checked;
     const backup = snapshot();
