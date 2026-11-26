@@ -90,12 +90,12 @@
   .owner-btn.active.both { border-color: #8e24aa; background: #8e24aa; color: #fff; }
   .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 50; align-items: flex-end; justify-content: center; }
   .modal-bg.open { display: flex; }
-  .modal { background: #171c28; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; padding: 18px; animation: up .18s ease-out; }
+  .modal { background: #171c28; width: 100%; max-width: 480px; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; border-radius: 18px 18px 0 0; padding: 18px; animation: up .18s ease-out; }
   @keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
   .modal h2 { margin: 0 0 12px; font-size: 16px; }
   .field { margin-bottom: 10px; }
   .field label { display: block; font-size: 12px; color: #9aa6b8; margin-bottom: 4px; }
-  .field input[type="text"], .field input[type="date"], .field input[type="time"] { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #2b3345; background: #0f1218; color: #fff; font-size: 15px; }
+  .field input[type="text"], .field input[type="date"], .field input[type="time"] { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #2b3345; background: #0f1218; color: #fff; font-size: 16px; }
   .mini-opt { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; color: #9aa6b8; }
   .mini-opt label { display: flex; align-items: center; gap: 4px; cursor: pointer; margin: 0; }
   .mini-opt select { padding: 4px 8px; border-radius: 6px; border: 1px solid #2b3345; background: #0f1218; color: #eef1f6; font-size: 12px; }
@@ -163,15 +163,20 @@
       <div class="field"><label>開始</label><input type="time" id="fStart" value="12:00"></div>
       <div class="field"><label>終了</label><input type="time" id="fEnd" value="13:00"></div>
     </div>
-    <div class="mini-opt">
+    <div class="mini-opt" style="flex-wrap:wrap;">
       <label><input type="checkbox" id="fRemOn" checked onchange="toggleMiniOpts()"> リマインダー</label>
-      <select id="fRemMin">
+      <select id="fRemMin" onchange="toggleMiniOpts()">
         <option value="10">10分前</option>
         <option value="30">30分前</option>
         <option value="60" selected>1時間前</option>
         <option value="120">2時間前</option>
         <option value="1440">1日前</option>
+        <option value="custom">カスタム</option>
       </select>
+      <span id="fRemCustom" style="display:none;align-items:center;gap:4px;">
+        <input type="number" id="fRemVal" min="1" max="10080" value="15" style="width:58px;padding:4px 6px;border-radius:6px;border:1px solid #2b3345;background:#0f1218;color:#fff;font-size:16px;">
+        <select id="fRemUnit"><option value="1">分前</option><option value="60">時間前</option><option value="1440">日前</option></select>
+      </span>
     </div>
     <div class="mini-opt">
       <label><input type="checkbox" id="fRecOn" onchange="toggleMiniOpts()"> 繰り返し</label>
@@ -747,19 +752,60 @@
     document.getElementById('fEnd').value = et;
     const rm = (remMin === undefined || remMin === null) ? 60 : Number(remMin);
     document.getElementById('fRemOn').checked = rm > 0;
-    document.getElementById('fRemMin').value = String(rm > 0 ? rm : 60);
+    const v = rm > 0 ? rm : 60;
+    if ([10, 30, 60, 120, 1440].indexOf(v) >= 0) {
+      document.getElementById('fRemMin').value = String(v);
+    } else {
+      document.getElementById('fRemMin').value = 'custom';
+      if (v % 1440 === 0) {
+        document.getElementById('fRemUnit').value = '1440';
+        document.getElementById('fRemVal').value = String(v / 1440);
+      } else if (v % 60 === 0) {
+        document.getElementById('fRemUnit').value = '60';
+        document.getElementById('fRemVal').value = String(v / 60);
+      } else {
+        document.getElementById('fRemUnit').value = '1';
+        document.getElementById('fRemVal').value = String(v);
+      }
+    }
     document.getElementById('fRecOn').checked = !!recur;
     document.getElementById('fRecur').value = recur || 'weekly';
     toggleTime(); toggleMiniOpts(); setOwner(owner);
     document.getElementById('modalBg').classList.add('open');
+    syncModalViewport();
     if (!modalPushed) { try { history.pushState({ penModal: 1 }, ''); modalPushed = true; } catch(e){} }
   }
   let modalPushed = false;
+  function syncModalViewport(){
+    const bg = document.getElementById('modalBg');
+    const modal = bg.querySelector('.modal');
+    if (!bg.classList.contains('open') || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    bg.style.top = vv.offsetTop + 'px';
+    bg.style.height = vv.height + 'px';
+    bg.style.bottom = 'auto';
+    modal.style.maxHeight = Math.max(220, Math.floor(vv.height - 16)) + 'px';
+  }
+  function resetModalViewport(){
+    const bg = document.getElementById('modalBg');
+    const modal = bg.querySelector('.modal');
+    bg.style.top = ''; bg.style.height = ''; bg.style.bottom = '';
+    modal.style.maxHeight = '';
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncModalViewport);
+    window.visualViewport.addEventListener('scroll', syncModalViewport);
+  }
+  document.getElementById('fTitle').addEventListener('focus', function() {
+    const el = this;
+    setTimeout(() => { syncModalViewport(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 120);
+  });
   function openModal(){ editingId = ''; fillModal('', selectedDate, selectedDate, false, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
   function openModalRange(d1, d2){ editingId = ''; fillModal('', d1, d2, d1 !== d2, '12:00', '13:00', 'both', '🐧 予定を追加', 60, ''); }
   function openEditModal(e){ editingId = e.id; fillModal(e.title, e.startDate || e.date, e.endDate || e.date, !!e.allDay, e.startTime || '12:00', e.endTime || '13:00', e.owner || 'both', '🐧 予定を編集', e.remMin, e.recur); }
   function closeModal(fromPop){
     document.getElementById('modalBg').classList.remove('open');
+    resetModalViewport();
     keepRange = null; updateDragHighlight();
     if (modalPushed) { modalPushed = false; if (!fromPop) { try { history.back(); } catch(e){} } }
   }
@@ -794,7 +840,10 @@
     });
   })();
   function toggleMiniOpts(){
-    document.getElementById('fRemMin').style.display = document.getElementById('fRemOn').checked ? '' : 'none';
+    const on = document.getElementById('fRemOn').checked;
+    const sel = document.getElementById('fRemMin');
+    sel.style.display = on ? '' : 'none';
+    document.getElementById('fRemCustom').style.display = (on && sel.value === 'custom') ? 'inline-flex' : 'none';
     document.getElementById('fRecur').style.display = document.getElementById('fRecOn').checked ? '' : 'none';
   }
   let confirmCb = null, confirmOneCb = null, confirmAllCb = null, confirmPushed = false;
@@ -835,7 +884,13 @@
     const endTime = document.getElementById('fEnd').value;
     const targetEditId = editingId;
     const owner = selectedOwner;
-    const remMin = document.getElementById('fRemOn').checked ? Number(document.getElementById('fRemMin').value) : 0;
+    let remMin = 0;
+    if (document.getElementById('fRemOn').checked) {
+      const rv = document.getElementById('fRemMin').value;
+      remMin = rv === 'custom'
+        ? Math.max(1, Number(document.getElementById('fRemVal').value || 15)) * Number(document.getElementById('fRemUnit').value || 1)
+        : Number(rv);
+    }
     const recur = document.getElementById('fRecOn').checked ? document.getElementById('fRecur').value : '';
     const notify = document.getElementById('fNotify').checked;
     const backup = snapshot();
